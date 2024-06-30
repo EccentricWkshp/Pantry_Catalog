@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Pantry Catalog - Home{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Pantry Catalog</h1>
+
+<div class="mb-4">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <input type="text" id="quickAddBarcode" class="form-control" placeholder="Enter barcode for quick add" aria-label="Quick add barcode">
+                <button class="btn btn-outline-secondary" type="button" id="quickAddButton">Quick Add</button>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+        Add Item
+    </button>
+    <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addLocationModal">
+        Add Location
+    </button>
+    <a href="{{ url_for('shopping_lists') }}" class="btn btn-info">Shopping Lists</a>
+</div>
+
+<h2>Pantry Items</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Quantity</th>
+            <th>Location</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="itemsTableBody">
+        {% for item in items %}
+        {% if item.quantity > 0 %}
+        <tr data-item-id="{{ item.id }}">
+            <td>
+                {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-thumbnail product-image">
+                {% else %}
+                <img src="{{ url_for('static', filename='images/no-image.png') }}" alt="No Image" class="img-thumbnail product-image">
+                {% endif %}
+            </td>
+            <td>{{ item.name }}</td>
+            <td class="item-quantity">{{ item.quantity }}</td>
+            <td>{{ item.location }}</td>
+            <td>
+                <button class="btn btn-sm btn-info" onclick="editItem({{ item.id }})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem({{ item.id }})">Delete</button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList({{ item.id }}, '{{ item.name }}')">+ List</button>
+                <button class="btn btn-sm btn-warning" onclick="useItem({{ item.id }})">Use</button>
+            </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Consumed Items</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="consumedItemsTableBody">
+        {% for item in consumed_items %}
+        <tr data-item-id="{{ item.id }}">
+            <td>
+                {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-thumbnail product-image">
+                {% else %}
+                <img src="{{ url_for('static', filename='images/no-image.png') }}" alt="No Image" class="img-thumbnail product-image">
+                {% endif %}
+            </td>
+            <td>{{ item.name }}</td>
+            <td>
+                <button class="btn btn-sm btn-success" onclick="moveToPantry({{ item.id }})">Move to Pantry</button>
+                <button class="btn btn-sm btn-info" onclick="editItem({{ item.id }})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem({{ item.id }})">Remove</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addItemModalLabel">Add Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addItemForm" onsubmit="addItem(); return false;">
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-2">
+                            <label for="barcode" class="form-label">Barcode</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-sm" id="barcode" name="barcode">
+                                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="lookupBarcode()">Lookup</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control form-control-sm" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control form-control-sm" id="quantity" name="quantity" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="location" class="form-label">Location</label>
+                            <select class="form-select form-select-sm" id="location" name="location" required>
+                                {% for location in locations %}
+                                <option value="{{ location.name }}">{{ location.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="brand" class="form-label">Brand</label>
+                            <input type="text" class="form-control form-control-sm" id="brand" name="brand">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="package_size" class="form-label">Package Size</label>
+                            <input type="text" class="form-control form-control-sm" id="package_size" name="package_size">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="packaging" class="form-label">Packaging</label>
+                            <select class="form-select form-select-sm" id="packaging" name="packaging">
+                                <option value="">Select packaging</option>
+                                {% for packaging_type in packaging_types %}
+                                <option value="{{ packaging_type.name }}">{{ packaging_type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="categories" class="form-label">Categories</label>
+                            <select class="form-select form-select-sm" id="categories" name="categories" multiple>
+                                {% for category in categories %}
+                                <option value="{{ category.name }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="image_url" class="form-label">Image URL</label>
+                            <input type="url" class="form-control form-control-sm" id="image_url" name="image_url">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="image_upload" class="form-label">Upload Image</label>
+                            <input type="file" class="form-control form-control-sm" id="image_upload" name="image_upload" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Location Modal -->
+<div class="modal fade" id="addLocationModal" tabindex="-1" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addLocationModalLabel">Add Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addLocationForm" onsubmit="addLocation(); return false;">
+                    <div class="mb-3">
+                        <label for="locationName" class="form-label">Location Name</label>
+                        <input type="text" class="form-control" id="locationName" name="locationName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Location</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editItemModalLabel">Edit Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editItemForm" onsubmit="updateItem(); return false;">
+                    <input type="hidden" id="editItemId" name="editItemId">
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-2">
+                            <label for="editName" class="form-label">Name</label>
+                            <input type="text" class="form-control form-control-sm" id="editName" name="editName" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editQuantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control form-control-sm" id="editQuantity" name="editQuantity" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editLocation" class="form-label">Location</label>
+                            <select class="form-select form-select-sm" id="editLocation" name="editLocation" required>
+                                {% for location in locations %}
+                                <option value="{{ location.name }}">{{ location.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editBarcode" class="form-label">Barcode</label>
+                            <input type="text" class="form-control form-control-sm" id="editBarcode" name="editBarcode">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editBrand" class="form-label">Brand</label>
+                            <input type="text" class="form-control form-control-sm" id="editBrand" name="editBrand">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editPackageSize" class="form-label">Package Size</label>
+                            <input type="text" class="form-control form-control-sm" id="editPackageSize" name="editPackageSize">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editPackaging" class="form-label">Packaging</label>
+                            <select class="form-select form-select-sm" id="editPackaging" name="editPackaging">
+                                <option value="">Select packaging</option>
+                                {% for packaging_type in packaging_types %}
+                                <option value="{{ packaging_type.name }}">{{ packaging_type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editCategories" class="form-label">Categories</label>
+                            <select class="form-select form-select-sm" id="editCategories" name="editCategories" multiple>
+                                {% for category in categories %}
+                                <option value="{{ category.name }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editImageUrl" class="form-label">Image URL</label>
+                            <input type="url" class="form-control form-control-sm" id="editImageUrl" name="editImageUrl">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="editImageUpload" class="form-label">Upload Image</label>
+                            <input type="file" class="form-control form-control-sm" id="editImageUpload" name="editImageUpload" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Update Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add to Shopping List Modal -->
+<div class="modal fade" id="addToShoppingListModal" tabindex="-1" aria-labelledby="addToShoppingListModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToShoppingListModalLabel">Add to Shopping List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addToShoppingListForm" onsubmit="confirmAddToShoppingList(); return false;">
+                    <input type="hidden" id="shoppingListItemId" name="shoppingListItemId">
+                    <input type="hidden" id="shoppingListItemName" name="shoppingListItemName">
+                    <div class="mb-3">
+                        <label for="shoppingListSelect" class="form-label">Select Shopping List</label>
+                        <select class="form-select" id="shoppingListSelect" name="shoppingListSelect" required>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shoppingListItemQuantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="shoppingListItemQuantity" name="shoppingListItemQuantity" required min="1" value="1">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add to List</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // JavaScript functions for adding, editing, and deleting items will be added in the script.js file
+</script>
+{% endblock %}

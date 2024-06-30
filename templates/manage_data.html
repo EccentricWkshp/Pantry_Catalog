@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Pantry Catalog - Manage Data{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Manage Data</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <h2>Locations</h2>
+        <ul class="list-group mb-3">
+            {% for location in locations %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ location.name }}
+                <div>
+                    <button class="btn btn-sm btn-info" onclick="editLocation({{ location.id }}, '{{ location.name }}')">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteLocation({{ location.id }})">Delete</button>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">Add Location</button>
+    </div>
+
+    <div class="col-md-4">
+        <h2>Packaging Types</h2>
+        <ul class="list-group mb-3">
+            {% for packaging_type in packaging_types %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ packaging_type.name }}
+                <div>
+                    <button class="btn btn-sm btn-info" onclick="editPackagingType({{ packaging_type.id }}, '{{ packaging_type.name }}')">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePackagingType({{ packaging_type.id }})">Delete</button>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPackagingTypeModal">Add Packaging Type</button>
+    </div>
+
+    <div class="col-md-4">
+        <h2>Categories</h2>
+        <ul class="list-group mb-3">
+            {% for category in categories %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ category.name }}
+                <div>
+                    <button class="btn btn-sm btn-info" onclick="editCategory({{ category.id }}, '{{ category.name }}')">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCategory({{ category.id }})">Delete</button>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">Add Category</button>
+    </div>
+</div>
+
+<!-- Add Location Modal -->
+<div class="modal fade" id="addLocationModal" tabindex="-1" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addLocationModalLabel">Add Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addLocationForm" onsubmit="addLocation(); return false;">
+                    <div class="mb-3">
+                        <label for="locationName" class="form-label">Location Name</label>
+                        <input type="text" class="form-control" id="locationName" name="locationName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Location</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Location Modal -->
+<div class="modal fade" id="editLocationModal" tabindex="-1" aria-labelledby="editLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editLocationModalLabel">Edit Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editLocationForm" onsubmit="updateLocation(); return false;">
+                    <input type="hidden" id="editLocationId" name="editLocationId">
+                    <div class="mb-3">
+                        <label for="editLocationName" class="form-label">Location Name</label>
+                        <input type="text" class="form-control" id="editLocationName" name="editLocationName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Update Location</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Packaging Type Modal -->
+<div class="modal fade" id="addPackagingTypeModal" tabindex="-1" aria-labelledby="addPackagingTypeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPackagingTypeModalLabel">Add Packaging Type</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addPackagingTypeForm" onsubmit="addPackagingType(); return false;">
+                    <div class="mb-3">
+                        <label for="packagingTypeName" class="form-label">Packaging Type Name</label>
+                        <input type="text" class="form-control" id="packagingTypeName" name="packagingTypeName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Packaging Type</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Packaging Type Modal -->
+<div class="modal fade" id="editPackagingTypeModal" tabindex="-1" aria-labelledby="editPackagingTypeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPackagingTypeModalLabel">Edit Packaging Type</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPackagingTypeForm" onsubmit="updatePackagingType(); return false;">
+                    <input type="hidden" id="editPackagingTypeId" name="editPackagingTypeId">
+                    <div class="mb-3">
+                        <label for="editPackagingTypeName" class="form-label">Packaging Type Name</label>
+                        <input type="text" class="form-control" id="editPackagingTypeName" name="editPackagingTypeName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Update Packaging Type</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCategoryModalLabel">Add Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCategoryForm" onsubmit="addCategory(); return false;">
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Category Name</label>
+                        <input type="text" class="form-control" id="categoryName" name="categoryName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Category</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCategoryModalLabel">Edit Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCategoryForm" onsubmit="updateCategory(); return false;">
+                    <input type="hidden" id="editCategoryId" name="editCategoryId">
+                    <div class="mb-3">
+                        <label for="editCategoryName" class="form-label">Category Name</label>
+                        <input type="text" class="form-control" id="editCategoryName" name="editCategoryName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Update Category</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // JavaScript functions for managing locations, packaging types, and categories will be added in the script.js file
+</script>
+{% endblock %}

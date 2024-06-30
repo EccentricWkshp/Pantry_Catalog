@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Pantry Catalog - Shopping Lists{% endblock %}
+
+{% block content %}
+<!-- Add Font Awesome CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<h1 class="mb-4">Shopping Lists</h1>
+
+<div class="mb-4">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createShoppingListModal">
+        <i class="fas fa-plus"></i> Create New List
+    </button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary"><i class="fas fa-home"></i> Back to Pantry</a>
+</div>
+
+<div class="row">
+    {% for list in lists %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ list.name }}</h5>
+                <div>
+                    <button class="btn btn-warning btn-sm" onclick="renameShoppingList({{ list.id }}, '{{ list.name }}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteShoppingList({{ list.id }})">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                    <a href="{{ url_for('print_shopping_list', list_id=list.id) }}" class="btn btn-secondary btn-sm" target="_blank">
+                        <i class="fas fa-print"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary btn-sm mb-3" onclick="showAddItemToListModal({{ list.id }})">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shoppingListItems-{{ list.id }}">
+                        <!-- Shopping list items will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Create Shopping List Modal -->
+<div class="modal fade" id="createShoppingListModal" tabindex="-1" aria-labelledby="createShoppingListModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createShoppingListModalLabel">Create Shopping List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createShoppingListForm" onsubmit="createShoppingList(); return false;">
+                    <div class="mb-3">
+                        <label for="shoppingListName" class="form-label">List Name</label>
+                        <input type="text" class="form-control" id="shoppingListName" name="shoppingListName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Create List</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item to Shopping List Modal -->
+<div class="modal fade" id="addItemToListModal" tabindex="-1" aria-labelledby="addItemToListModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addItemToListModalLabel">Add Item to Shopping List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addItemToListForm" onsubmit="addItemToList(); return false;">
+                    <input type="hidden" id="addItemListId" name="addItemListId">
+                    <div class="mb-3">
+                        <label for="addItemName" class="form-label">Item Name</label>
+                        <input type="text" class="form-control" id="addItemName" name="addItemName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addItemQuantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="addItemQuantity" name="addItemQuantity" required min="1" value="1">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Shopping List Modal -->
+<div class="modal fade" id="renameShoppingListModal" tabindex="-1" aria-labelledby="renameShoppingListModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renameShoppingListModalLabel">Rename Shopping List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="renameShoppingListForm" onsubmit="confirmRenameShoppingList(); return false;">
+                    <input type="hidden" id="renameListId" name="renameListId">
+                    <div class="mb-3">
+                        <label for="newListName" class="form-label">New List Name</label>
+                        <input type="text" class="form-control" id="newListName" name="newListName" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Rename List</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editShoppingListItemModal" tabindex="-1" aria-labelledby="editShoppingListItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editShoppingListItemModalLabel">Edit Shopping List Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editShoppingListItemForm" onsubmit="updateShoppingListItem(); return false;">
+                    <input type="hidden" id="editItemListId" name="editItemListId">
+                    <input type="hidden" id="editItemId" name="editItemId">
+                    <div class="mb-3">
+                        <label for="editItemName" class="form-label">Item Name</label>
+                        <input type="text" class="form-control" id="editItemName" name="editItemName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editItemQuantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="editItemQuantity" name="editItemQuantity" required min="1" value="1">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Update Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for list in lists %}
+            loadShoppingListItems({{ list.id }});
+        {% endfor %}
+    });
+</script>
+{% endblock %}
