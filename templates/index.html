@@ -14,16 +14,40 @@
             </div>
         </div>
     </div>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
-        Add Item
-    </button>
-    <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addLocationModal">
-        Add Location
-    </button>
-    <a href="{{ url_for('shopping_lists') }}" class="btn btn-info">Shopping Lists</a>
 </div>
 
-<h2>Pantry Items</h2>
+<div class="row mb-3">
+    <div class="col-md-3 mb-2">
+        <input type="text" id="nameFilter" class="form-control" placeholder="Filter by name">
+    </div>
+    <div class="col-md-3 mb-2">
+        <select id="quantityFilter" class="form-select">
+            <option value="">All Quantities</option>
+            <option value="1-5">1-5</option>
+            <option value="6-10">6-10</option>
+            <option value="11-20">11-20</option>
+            <option value="21+">21+</option>
+        </select>
+    </div>
+    <div class="col-md-3 mb-2">
+        <select id="locationFilter" class="form-select">
+            <option value="">All Locations</option>
+            <option value="Default Location">Default Location</option>
+            {% for location in locations %}
+            <option value="{{ location.name }}">{{ location.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3 mb-2">
+        <select id="categoryFilter" class="form-select">
+            <option value="">All Categories</option>
+            {% for category in categories %}
+            <option value="{{ category.name }}">{{ category.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
 <table class="table table-striped">
     <thead>
         <tr>
@@ -38,13 +62,13 @@
         {% for item in items %}
         {% if item.quantity > 0 %}
         <tr data-item-id="{{ item.id }}">
-            <td>
-                {% if item.image_url %}
-                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-thumbnail product-image">
-                {% else %}
-                <img src="{{ url_for('static', filename='images/no-image.png') }}" alt="No Image" class="img-thumbnail product-image">
-                {% endif %}
-            </td>
+			<td>
+				{% if item.image_url %}
+				<img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-thumbnail product-image">
+				{% else %}
+				<img src="{{ url_for('static', filename='images/no-image.png') }}" alt="No Image" class="img-thumbnail product-image">
+				{% endif %}
+			</td>
             <td>{{ item.name }}</td>
             <td class="item-quantity">{{ item.quantity }}</td>
             <td>{{ item.location }}</td>
@@ -249,12 +273,17 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        <div class="col-12 mb-2">
+                            <label for="editImagePreview" class="form-label">Current Image</label>
+                            <img id="editImagePreview" src="" alt="No image" class="img-thumbnail d-block mb-2" style="max-width: 200px; max-height: 200px;">
+                            <div id="editCurrentImageUrl" class="small text-muted"></div>
+                        </div>
                         <div class="col-md-6 mb-2">
                             <label for="editImageUrl" class="form-label">Image URL</label>
                             <input type="url" class="form-control form-control-sm" id="editImageUrl" name="editImageUrl">
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label for="editImageUpload" class="form-label">Upload Image</label>
+                            <label for="editImageUpload" class="form-label">Upload New Image</label>
                             <input type="file" class="form-control form-control-sm" id="editImageUpload" name="editImageUpload" accept="image/*">
                         </div>
                     </div>

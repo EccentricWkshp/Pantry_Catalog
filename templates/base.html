@@ -44,5 +44,17 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     {% block scripts %}{% endblock %}
+
+<!-- Image Enlargement Modal -->
+<div class="modal fade" id="imageEnlargementModal" tabindex="-1" aria-labelledby="imageEnlargementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-body p-0">
+                <img id="enlargedImage" src="" alt="Enlarged product image" class="img-fluid w-100" style="cursor: pointer;">
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

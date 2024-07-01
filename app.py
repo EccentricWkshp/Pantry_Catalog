@@ -1,14 +1,29 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file
-from database import init_db, add_item, get_items, get_item, get_locations, add_location, get_packaging_types, get_categories, add_category, delete_item, edit_item, delete_location, edit_location, delete_category, edit_category, add_packaging_type, delete_packaging_type, edit_packaging_type, create_shopping_list, get_shopping_lists, get_shopping_list, add_to_shopping_list, remove_from_shopping_list, delete_shopping_list, rename_shopping_list, get_item_by_barcode, update_item_quantity, use_item, get_consumed_items, move_to_pantry, update_shopping_list_item
+from database import (
+    DATABASE,  # Import the DATABASE constant
+    init_db, add_item, get_items, get_item, get_locations, add_location,
+    get_packaging_types, get_categories, add_category, delete_item, edit_item,
+    delete_location, edit_location, delete_category, edit_category,
+    add_packaging_type, delete_packaging_type, edit_packaging_type,
+    create_shopping_list, get_shopping_lists, get_shopping_list,
+    add_to_shopping_list, remove_from_shopping_list, delete_shopping_list,
+    rename_shopping_list, get_item_by_barcode, update_item_quantity,
+    use_item, get_consumed_items, move_to_pantry, update_shopping_list_item
+)
 import requests
 import json
 import os
+import shutil
+from datetime import datetime
 from werkzeug.utils import secure_filename
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, Spacer
 import io
+import atexit
+from datetime import datetime
 
 app = Flask(__name__)
 init_db()
@@ -17,6 +32,9 @@ UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Global variable to store paths of temporary files
+temp_files = []
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -32,13 +50,25 @@ def index():
 
 @app.route('/use_item/<int:item_id>', methods=['POST'])
 def use_item_route(item_id):
-    use_item(item_id)
-    return jsonify({"success": True, "message": "Item used successfully"}), 200
+    try:
+        updated_item = use_item(item_id)
+        if updated_item:
+            return jsonify({"success": True, "message": "Item used successfully", "item": updated_item}), 200
+        else:
+            return jsonify({"success": False, "message": "Item not found or quantity already zero"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/move_to_pantry/<int:item_id>', methods=['POST'])
 def move_to_pantry_route(item_id):
-    move_to_pantry(item_id)
-    return jsonify({"success": True, "message": "Item moved to pantry successfully"}), 200
+    try:
+        updated_item = move_to_pantry(item_id)
+        if updated_item:
+            return jsonify({"success": True, "message": "Item moved to pantry successfully", "item": updated_item}), 200
+        else:
+            return jsonify({"success": False, "message": "Item not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
     
 @app.route('/add_item', methods=['POST'])
 def add_item_route():
@@ -90,16 +120,23 @@ def edit_item_route():
         package_size = request.form.get('editPackageSize')
         packaging = request.form.get('editPackaging')
         categories = request.form.getlist('editCategories')
-        image_url = request.form.get('editImageUrl')
-
-        # Handle image upload
-        if 'editImageUpload' in request.files:
-            file = request.files['editImageUpload']
+        
+        # Handle image update
+        if 'image_upload' in request.files:
+            file = request.files['image_upload']
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(file_path)
                 image_url = f'/static/uploads/{filename}'
+            else:
+                image_url = None
+        elif 'image_url' in request.form:
+            image_url = request.form['image_url']
+        else:
+            # If no new image is provided, keep the existing one
+            existing_item = get_item(id)
+            image_url = existing_item['image_url'] if existing_item else None
 
         edit_item(id, name, quantity, location, barcode, brand, package_size, packaging, categories, image_url)
         return jsonify({"success": True, "message": "Item updated successfully"}), 200
@@ -293,19 +330,23 @@ def delete_shopping_list_route():
 
 @app.route('/print_shopping_list/<int:list_id>')
 def print_shopping_list(list_id):
-    shopping_list_data = get_shopping_list(list_id)
-    if shopping_list_data:
+    shopping_list = get_shopping_list(list_id)
+    if shopping_list:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter)
         elements = []
 
+        # Add title
         styles = getSampleStyleSheet()
-        elements.append(Paragraph(f"Shopping List: {shopping_list_data['name']}", styles['Title']))
+        elements.append(Paragraph(f"{shopping_list['name']}", styles['Title']))
+        elements.append(Spacer(1, 12))
 
+        # Create table data
         data = [['Item', 'Quantity']]
-        for item in sorted(shopping_list_data['items'], key=lambda x: x['name'].lower()):
+        for item in shopping_list['items']:
             data.append([item['name'], str(item['quantity'])])
 
+        # Create table
         table = Table(data)
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -323,14 +364,20 @@ def print_shopping_list(list_id):
             ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
             ('GRID', (0, 0), (-1, -1), 1, colors.black)
         ]))
+
         elements.append(table)
 
+        # Build PDF
         doc.build(elements)
+
         buffer.seek(0)
-        return send_file(buffer, 
-                         download_name=f'shopping_list_{list_id}.pdf', 
-                         as_attachment=True, 
-                         mimetype='application/pdf')
+        
+        # Generate filename using shopping list name and current date
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        safe_filename = "".join([c for c in shopping_list['name'] if c.isalpha() or c.isdigit() or c==' ']).rstrip()
+        filename = f"{safe_filename}_{current_date}.pdf"
+        
+        return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
     else:
         return jsonify({"success": False, "message": "Shopping list not found"}), 404
 
@@ -390,5 +437,56 @@ def quick_add():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+@app.route('/download_database')
+def download_database():
+    global temp_files
+    try:
+        # Create a backup copy of the database
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_filename = f'pantry_catalog_backup_{timestamp}.db'
+        backup_path = os.path.join(app.root_path, 'temp', backup_filename)
+        
+        # Ensure the temp directory exists
+        os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+        
+        # Copy the database file
+        shutil.copy2(DATABASE, backup_path)
+        
+        # Add the backup file path to the list of temporary files
+        temp_files.append(backup_path)
+        
+        # Send the backup file
+        return send_file(backup_path,
+                         as_attachment=True, 
+                         download_name=backup_filename, 
+                         mimetype='application/x-sqlite3')
+    except Exception as e:
+        return str(e)
+
+def cleanup_temp_files():
+    global temp_files
+    for file_path in temp_files:
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Error deleting temporary file {file_path}: {str(e)}")
+    temp_files = []
+
+# Register the cleanup function to run when the application exits
+atexit.register(cleanup_temp_files)
+
+@app.route('/get_items', methods=['GET'])
+def get_items_route():
+    try:
+        items = get_items()
+        return jsonify(items), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Clean up any leftover temporary files from previous runs
+    cleanup_temp_files()
+
+    app.run(debug=True, host="0.0.0.0", port=5000)  # Modify the port if needed

@@ -261,9 +261,38 @@ def rename_shopping_list(list_id, new_name):
 def use_item(item_id):
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    c.execute("UPDATE items SET quantity = quantity - 1 WHERE id = ? AND quantity > 0", (item_id,))
-    conn.commit()
+    
+    # First, check if the item exists and has a quantity > 0
+    c.execute("SELECT * FROM items WHERE id = ? AND quantity > 0", (item_id,))
+    item = c.fetchone()
+    
+    if item:
+        # Decrease the quantity by 1
+        new_quantity = item[2] - 1  # Assuming quantity is at index 2
+        c.execute("UPDATE items SET quantity = ? WHERE id = ?", (new_quantity, item_id))
+        conn.commit()
+        
+        # Fetch the updated item
+        c.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+        updated_item = c.fetchone()
+        conn.close()
+        
+        if updated_item:
+            return {
+                'id': updated_item[0],
+                'name': updated_item[1],
+                'quantity': updated_item[2],
+                'location': updated_item[3],
+                'barcode': updated_item[4],
+                'brand': updated_item[5],
+                'package_size': updated_item[6],
+                'packaging': updated_item[7],
+                'categories': json.loads(updated_item[8] or '[]'),
+                'image_url': updated_item[9]
+            }
+    
     conn.close()
+    return None
 
 def get_consumed_items():
     conn = sqlite3.connect(DATABASE)
@@ -288,3 +317,38 @@ def update_shopping_list_item(list_id, item_id, name, quantity):
               (name, quantity, list_id, item_id))
     conn.commit()
     conn.close()
+
+def move_to_pantry(item_id):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    
+    # Check if the item exists
+    c.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+    item = c.fetchone()
+    
+    if item:
+        # Set the quantity to 1
+        c.execute("UPDATE items SET quantity = 1 WHERE id = ?", (item_id,))
+        conn.commit()
+        
+        # Fetch the updated item
+        c.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+        updated_item = c.fetchone()
+        conn.close()
+        
+        if updated_item:
+            return {
+                'id': updated_item[0],
+                'name': updated_item[1],
+                'quantity': updated_item[2],
+                'location': updated_item[3],
+                'barcode': updated_item[4],
+                'brand': updated_item[5],
+                'package_size': updated_item[6],
+                'packaging': updated_item[7],
+                'categories': json.loads(updated_item[8] or '[]'),
+                'image_url': updated_item[9]
+            }
+    
+    conn.close()
+    return None

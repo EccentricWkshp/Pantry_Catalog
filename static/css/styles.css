@@ -175,3 +175,18 @@ body {
     max-height: 30px;
     width: auto;
 }
+
+/* Styles for the image enlargement modal */
+#imageEnlargementModal .modal-content {
+    background-color: transparent;
+    border: none;
+}
+
+#imageEnlargementModal .modal-body {
+    padding: 0;
+}
+
+#enlargedImage {
+    max-height: 80vh;
+    object-fit: contain;
+}

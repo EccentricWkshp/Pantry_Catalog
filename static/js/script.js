@@ -53,7 +53,6 @@ function addItem() {
 
 // Function to edit an item
 function editItem(itemId) {
-    // Fetch item details and populate the edit form
     axios.get(`/get_item/${itemId}`)
         .then(response => {
             const item = response.data;
@@ -65,7 +64,26 @@ function editItem(itemId) {
             document.getElementById('editBrand').value = item.brand || '';
             document.getElementById('editPackageSize').value = item.package_size || '';
             document.getElementById('editPackaging').value = item.packaging || '';
-            document.getElementById('editImageUrl').value = item.image_url || '';
+
+            // Handle image display
+            const imagePreview = document.getElementById('editImagePreview');
+            const currentImageUrl = document.getElementById('editCurrentImageUrl');
+            if (item.image_url) {
+                imagePreview.src = item.image_url;
+                imagePreview.style.display = 'block';
+                if (item.image_url.startsWith('/static/uploads/')) {
+                    currentImageUrl.textContent = 'Current image: User uploaded';
+                    document.getElementById('editImageUrl').value = '';
+                } else {
+                    currentImageUrl.textContent = 'Current image URL: ' + item.image_url;
+                    document.getElementById('editImageUrl').value = item.image_url;
+                }
+            } else {
+                imagePreview.src = '';
+                imagePreview.style.display = 'none';
+                currentImageUrl.textContent = 'No current image';
+                document.getElementById('editImageUrl').value = '';
+            }
 
             // Set selected categories
             const categoriesSelect = document.getElementById('editCategories');
@@ -92,6 +110,12 @@ function updateItem() {
     const imageUpload = document.getElementById('editImageUpload').files[0];
     if (imageUpload) {
         formData.append('image_upload', imageUpload);
+    } else {
+        // If no new image is uploaded, use the image URL if provided
+        const imageUrl = document.getElementById('editImageUrl').value;
+        if (imageUrl) {
+            formData.append('image_url', imageUrl);
+        }
     }
 
     axios.post('/edit_item', formData, {
@@ -635,8 +659,19 @@ function quickAdd() {
             }
         })
         .catch(error => {
-            showNotification('Error processing quick add: ' + (error.response?.data?.message || error.message), 'error');
+            const errorMessage = error.response?.data?.message || error.message;
+            showNotification('Error processing quick add: ' + errorMessage, 'error');
             console.error('Error:', error);
+
+            if (errorMessage === 'Product not found') {
+                // Open the add item modal and populate the barcode field
+                const addItemModal = new bootstrap.Modal(document.getElementById('addItemModal'));
+                addItemModal.show();
+                document.getElementById('barcode').value = barcode;
+                
+                // Clear the quick add input
+                barcodeInput.value = '';
+            }
         });
 }
 
@@ -679,6 +714,9 @@ function updateItemList(item) {
             tbody.prepend(existingRow);
         }
     }
+	
+	// After adding the new row or updating an existing one
+    addImageClickListeners();
 }
 
 function createPantryItemRow(consumedRow, item) {
@@ -715,15 +753,66 @@ function useItem(itemId) {
         .then(response => {
             if (response.data.success) {
                 showNotification(response.data.message, 'success');
-                updateItemQuantity(itemId);
+                
+                // Update the item in allItems
+                const itemIndex = allItems.findIndex(item => item.id === itemId);
+                if (itemIndex !== -1) {
+                    const updatedItem = response.data.item;
+                    allItems[itemIndex] = updatedItem;
+                    if (updatedItem.quantity > 0) {
+                        updateItemRow(updatedItem);
+                    } else {
+                        removeItemRow(itemId);
+                        allItems.splice(itemIndex, 1);
+                        addToConsumedItems(updatedItem);
+                    }
+                }
             } else {
                 showNotification(response.data.message, 'error');
             }
         })
         .catch(error => {
-            showNotification('Error using item: ' + (error.response?.data?.message || error.message), 'error');
+            const errorMessage = error.response?.data?.message || error.message;
+            showNotification('Error using item: ' + errorMessage, 'error');
             console.error('Error:', error);
         });
+}
+
+function addToConsumedItems(item) {
+    const consumedItemsBody = document.getElementById('consumedItemsTableBody');
+    if (consumedItemsBody) {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-item-id', item.id);
+        tr.innerHTML = `
+            <td>
+                ${item.image_url ? 
+                    `<img src="${item.image_url}" alt="${item.name}" class="img-thumbnail product-image">` :
+                    `<img src="/static/images/no-image.png" alt="No Image" class="img-thumbnail product-image">`
+                }
+            </td>
+            <td>${item.name}</td>
+            <td>
+                <button class="btn btn-sm btn-success" onclick="moveToPantry(${item.id})">Move to Pantry</button>
+                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Remove</button>
+            </td>
+        `;
+        consumedItemsBody.appendChild(tr);
+    }
+}
+
+function updateItemRow(item) {
+    const row = document.querySelector(`#itemsTableBody tr[data-item-id="${item.id}"]`);
+    if (row) {
+        row.querySelector('td:nth-child(3)').textContent = item.quantity;
+    }
+}
+
+function removeItemRow(itemId) {
+    const row = document.querySelector(`#itemsTableBody tr[data-item-id="${itemId}"]`);
+    if (row) {
+        row.remove();
+    }
 }
 
 function updateItemQuantity(itemId) {
@@ -769,15 +858,59 @@ function moveToPantry(itemId) {
         .then(response => {
             if (response.data.success) {
                 showNotification(response.data.message, 'success');
-                moveItemToPantryList(itemId);
+                const updatedItem = response.data.item;
+                
+                // Remove from consumed items
+                removeItemRow(itemId, 'consumedItemsTableBody');
+                
+                // Add to pantry items
+                allItems.push(updatedItem);
+                addToPantryItems(updatedItem);
+                
+                // Re-apply filters to maintain current view
+                applyFilters();
             } else {
                 showNotification(response.data.message, 'error');
             }
         })
         .catch(error => {
-            showNotification('Error moving item to pantry: ' + (error.response?.data?.message || error.message), 'error');
+            const errorMessage = error.response?.data?.message || error.message;
+            showNotification('Error moving item to pantry: ' + errorMessage, 'error');
             console.error('Error:', error);
         });
+}
+
+function addToPantryItems(item) {
+    const pantryItemsBody = document.getElementById('itemsTableBody');
+    if (pantryItemsBody) {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-item-id', item.id);
+        tr.innerHTML = `
+            <td>
+                ${item.image_url ? 
+                    `<img src="${item.image_url}" alt="${item.name}" class="img-thumbnail product-image">` :
+                    `<img src="/static/images/no-image.png" alt="No Image" class="img-thumbnail product-image">`
+                }
+            </td>
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${item.location || 'Default Location'}</td>
+            <td>
+                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
+                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+            </td>
+        `;
+        pantryItemsBody.appendChild(tr);
+    }
+}
+
+function removeItemRow(itemId, tableBodyId = 'itemsTableBody') {
+    const row = document.querySelector(`#${tableBodyId} tr[data-item-id="${itemId}"]`);
+    if (row) {
+        row.remove();
+    }
 }
 
 function moveItemToPantryList(itemId) {
@@ -819,8 +952,183 @@ function createPantryItemRow(originalRow) {
     return newRow;
 }
 
+function enlargeImage(event) {
+    const imgSrc = event.target.src;
+    const enlargedImage = document.getElementById('enlargedImage');
+    enlargedImage.src = imgSrc;
+
+    const modal = new bootstrap.Modal(document.getElementById('imageEnlargementModal'));
+    modal.show();
+}
+
+function closeEnlargedImage() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('imageEnlargementModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+// Function to add click event listeners to new product images
+function addImageClickListeners() {
+    const productImages = document.querySelectorAll('.product-image');
+    productImages.forEach(img => {
+        img.removeEventListener('click', enlargeImage); // Remove existing listener to prevent duplicates
+        img.addEventListener('click', enlargeImage);
+    });
+}
+
+// Global variables
+let allItems = [];
+let isPantryPage = false;
+
+function loadItems() {
+    if (!isPantryPage) return;
+
+    axios.get('/get_items')
+        .then(response => {
+            allItems = response.data.filter(item => item.quantity > 0);
+            applyFilters();
+        })
+        .catch(error => {
+            showNotification('Error loading items: ' + error.message, 'error');
+        });
+}
+
+function renderItems(items) {
+    const tbody = document.getElementById('itemsTableBody');
+    tbody.innerHTML = '';
+    items.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-item-id', item.id);
+        tr.innerHTML = `
+            <td>
+                ${item.image_url ? 
+                    `<img src="${item.image_url}" alt="${item.name}" class="img-thumbnail product-image">` :
+                    `<img src="/static/images/no-image.png" alt="No Image" class="img-thumbnail product-image">`
+                }
+            </td>
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${item.location || 'Default Location'}</td>
+            <td>
+                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
+                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function setupFilters() {
+    if (!isPantryPage) return;
+
+    const nameFilter = document.getElementById('nameFilter');
+    const quantityFilter = document.getElementById('quantityFilter');
+    const locationFilter = document.getElementById('locationFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    if (nameFilter) nameFilter.addEventListener('input', applyFilters);
+    if (quantityFilter) quantityFilter.addEventListener('change', applyFilters);
+    if (locationFilter) locationFilter.addEventListener('change', applyFilters);
+    if (categoryFilter) categoryFilter.addEventListener('change', applyFilters);
+}
+
+function applyFilters() {
+    if (!isPantryPage) return;
+
+    const nameFilter = document.getElementById('nameFilter');
+    const quantityFilter = document.getElementById('quantityFilter');
+    const locationFilter = document.getElementById('locationFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    const filteredItems = allItems.filter(item => {
+        const nameMatch = !nameFilter || item.name.toLowerCase().includes(nameFilter.value.toLowerCase());
+        const locationMatch = !locationFilter || locationFilter.value === '' || 
+                              (locationFilter.value === 'Default Location' && !item.location) || 
+                              item.location === locationFilter.value;
+        const categoryMatch = !categoryFilter || categoryFilter.value === '' || 
+                              (item.categories && item.categories.includes(categoryFilter.value));
+        
+        let quantityMatch = true;
+        if (quantityFilter && quantityFilter.value) {
+            const [min, max] = quantityFilter.value.split('-').map(Number);
+            if (max) {
+                quantityMatch = item.quantity >= min && item.quantity <= max;
+            } else {
+                quantityMatch = item.quantity >= min;
+            }
+        }
+
+        return nameMatch && quantityMatch && locationMatch && categoryMatch;
+    });
+
+    // Sort items alphabetically by name
+    filteredItems.sort((a, b) => a.name.localeCompare(b.name));
+
+    renderItems(filteredItems);
+}
+
+function setupShoppingListModal() {
+    const addItemModal = document.getElementById('addItemToListModal');
+    if (addItemModal) {
+        addItemModal.addEventListener('hidden.bs.modal', function () {
+            // Clear the item name input when the modal is closed
+            const itemNameInput = document.getElementById('addItemName');
+            if (itemNameInput) {
+                itemNameInput.value = '';
+            }
+            
+            // Optionally, reset the quantity to 1
+            const itemQuantityInput = document.getElementById('addItemQuantity');
+            if (itemQuantityInput) {
+                itemQuantityInput.value = '1';
+            }
+        });
+    }
+}
+
+function showAddItemToListModal(listId) {
+    const modal = new bootstrap.Modal(document.getElementById('addItemToListModal'));
+    document.getElementById('addItemListId').value = listId;
+    
+    // Clear the item name input when opening the modal
+    const itemNameInput = document.getElementById('addItemName');
+    if (itemNameInput) {
+        itemNameInput.value = '';
+    }
+    
+    // Optionally, reset the quantity to 1
+    const itemQuantityInput = document.getElementById('addItemQuantity');
+    if (itemQuantityInput) {
+        itemQuantityInput.value = '1';
+    }
+    
+    modal.show();
+}
+
+// Call this function when the page loads
+document.addEventListener('DOMContentLoaded', loadItems);
+
 // Event listener for quick add button
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on the pantry page
+    isPantryPage = !!document.getElementById('itemsTableBody');
+
+    if (isPantryPage) {
+        loadItems();
+        setupFilters();
+    }
+
+    // Set up event listeners for elements that exist on all pages
+    setupCommonEventListeners();
+
+    // Set up event listener for the shopping list modal
+    setupShoppingListModal();
+
+    // Quick Add feature setup
     const quickAddButton = document.getElementById('quickAddButton');
     const quickAddInput = document.getElementById('quickAddBarcode');
 
@@ -835,5 +1143,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 quickAdd();
             }
         });
+
+        // Set focus to the quick add input field
+        quickAddInput.focus();
+    }
+
+    // Add event listeners for product images
+    const productImages = document.querySelectorAll('.product-image');
+    productImages.forEach(img => {
+        img.addEventListener('click', enlargeImage);
+    });
+
+    // Add event listener for closing the enlarged image
+    const enlargedImage = document.getElementById('enlargedImage');
+    if (enlargedImage) {
+        enlargedImage.addEventListener('click', closeEnlargedImage);
     }
 });
+
+function setupCommonEventListeners() {
+    // Add event listeners for elements that exist on all pages
+    // For example, the create shopping list form
+    const createShoppingListForm = document.getElementById('createShoppingListForm');
+    if (createShoppingListForm) {
+        createShoppingListForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            createShoppingList();
+        });
+    }
+
+    // Add other common event listeners here
+}
