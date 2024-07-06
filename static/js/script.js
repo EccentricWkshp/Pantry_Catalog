@@ -637,15 +637,24 @@ function deleteShoppingList(listId) {
 }
 
 function quickAdd() {
-    //console.log('Quick add triggered');
+    console.log('Quick add triggered');
     const barcodeInput = document.getElementById('quickAddBarcode');
     const barcode = barcodeInput.value;
+
+    const qaLocationInput = document.getElementById('qaLocation');
+    const location = qaLocationInput.value;
+
     if (!barcode) {
         showFeedback('Please enter a barcode.', 'alert-warning');
         return;
     }
 
-    axios.post('/quick_add', { barcode: barcode })
+    if (!location) {
+        showFeedback('Please select a location.', 'alert-warning');
+        return;
+    }
+
+    axios.post('/quick_add', { barcode: barcode, location: location })
         .then(response => {
             if (response.data.success) {
                 showNotification(response.data.message, 'success');
@@ -1144,14 +1153,26 @@ document.addEventListener('DOMContentLoaded', function() {
     setupShoppingListModal();
 
     const quickAddInput = document.getElementById('quickAddBarcode');
-
+ 
     if (quickAddInput) {
-        quickAddInput.addEventListener('keypress', function(event) {
+        // Add keydown event listener to handle "Enter" on all devices
+        quickAddInput.addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                //console.log('Enter key pressed');
                 quickAdd();
             }
+        });
+
+        // Add input event listener to handle input changes
+        quickAddInput.addEventListener('input', function(event) {
+            console.log('Input event detected');
+            // Logic to process the input change if needed
+        });
+
+        // Add change event listener to handle input losing focus
+        quickAddInput.addEventListener('change', function(event) {
+            console.log('Change event detected');
+            quickAdd();
         });
 
         // Set focus to the quick add input field

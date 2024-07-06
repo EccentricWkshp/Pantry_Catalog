@@ -389,6 +389,7 @@ def print_shopping_list(list_id):
 def quick_add():
     try:
         barcode = request.json['barcode']
+        location = request.json['location']
         
         # Check if the item already exists
         existing_item = get_item_by_barcode(barcode)
@@ -418,13 +419,13 @@ def quick_add():
                 categories = product.get('categories', '').split(',')
                 
                 # Add the new item
-                new_item_id = add_item(name, 1, "Default Location", barcode, brand, package_size, None, categories, image_url)
+                new_item_id = add_item(name, 1, location, barcode, brand, package_size, None, categories, image_url)
                 
                 new_item = {
                     "id": new_item_id,
                     "name": name,
                     "quantity": 1,
-                    "location": "Default Location",
+                    "location": location,
                     "barcode": barcode,
                     "brand": brand,
                     "package_size": package_size,

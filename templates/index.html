@@ -8,10 +8,21 @@
 <div class="mb-4">
     <div class="row">
         <div class="col-md-6">
+            
+            <div class="input-group mb-3">
+                <label for="qaLocation" class="form-label">Location</label>
+                <select class="form-select form-select-sm" id="qaLocation" name="qaLocation" required>
+                    {% for location in locations %}
+                    <option value="{{ location.name }}">{{ location.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
             <div class="input-group mb-3">
                 <input type="text" id="quickAddBarcode" class="form-control" placeholder="Enter barcode for quick add" aria-label="Quick add barcode">
                 <button class="btn btn-outline-secondary" type="button" id="quickAddButton">Quick Add</button>
             </div>
+            
         </div>
     </div>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">

@@ -3,6 +3,9 @@
 *.7z
 *.db
 
+# Data Folders
+/static/uploads
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
