@@ -25,6 +25,9 @@
     </a>
 </div>
 
+<!-- Feedback message area -->
+<div id="feedbackMessage" class="alert" role="alert" style="display: none;"></div>
+
 <div class="row mb-3">
     <div class="col-md-3 mb-2">
         <input type="text" id="nameFilter" class="form-control" placeholder="Filter by name">
@@ -71,13 +74,13 @@
         {% for item in items %}
         {% if item.quantity > 0 %}
         <tr data-item-id="{{ item.id }}">
-			<td>
-				{% if item.image_url %}
-				<img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-thumbnail product-image">
-				{% else %}
-				<img src="{{ url_for('static', filename='images/no-image.png') }}" alt="No Image" class="img-thumbnail product-image">
-				{% endif %}
-			</td>
+            <td>
+                {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-thumbnail product-image">
+                {% else %}
+                <img src="{{ url_for('static', filename='images/no-image.png') }}" alt="No Image" class="img-thumbnail product-image">
+                {% endif %}
+            </td>
             <td>{{ item.name }}</td>
             <td class="item-quantity">{{ item.quantity }}</td>
             <td>{{ item.location }}</td>
@@ -341,6 +344,19 @@
 
 {% block scripts %}
 <script>
-    // JavaScript functions for adding, editing, and deleting items will be added in the script.js file
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            document.getElementById('quickAddBarcode').focus();
+        }, 500);
+    });
+
+    document.getElementById('quickAddButton').addEventListener('click', function() {
+        const barcode = document.getElementById('quickAddBarcode').value;
+        if (barcode) {
+            lookupBarcode(barcode);
+        } else {
+            showFeedback('Please enter a barcode.', 'alert-warning');
+        }
+    });
 </script>
 {% endblock %}

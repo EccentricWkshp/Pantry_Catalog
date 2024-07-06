@@ -149,36 +149,38 @@ function deleteItem(itemId) {
 }
 
 // Function to lookup barcode
-function lookupBarcode() {
-    const barcode = document.getElementById('barcode').value;
-    if (!barcode) {
-        showNotification('Please enter a barcode', 'error');
-        return;
-    }
-    axios.post('/lookup_barcode', { barcode: barcode })
-        .then(response => {
-            const data = response.data;
-            if (data.success) {
-                document.getElementById('name').value = data.name;
-                document.getElementById('brand').value = data.brand;
-                document.getElementById('package_size').value = data.package_size;
-                document.getElementById('image_url').value = data.image_url;
+function lookupBarcode(barcode) {
+    showFeedback('Looking up barcode...', 'alert-info');
+    fetch('/lookup_barcode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'PantryCatalogApp/1.0 (https://example.com)'  // Replace with your app's user agent
+        },
+        body: JSON.stringify({ barcode: barcode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showFeedback('Product found!', 'alert-success');
+            // You can update the UI or prefill forms with the product data if needed.
+        } else {
+            showFeedback(data.message, 'alert-danger');
+        }
+    })
+    .catch(error => {
+        showFeedback('Error looking up barcode.', 'alert-danger');
+    });
+}
 
-                // Set selected categories
-                const categoriesSelect = document.getElementById('categories');
-                for (let option of categoriesSelect.options) {
-                    option.selected = data.categories.includes(option.value);
-                }
-
-                showNotification('Product information retrieved successfully', 'success');
-            } else {
-                showNotification('Product not found', 'error');
-            }
-        })
-        .catch(error => {
-            showNotification('Error looking up barcode: ' + (error.response?.data?.message || error.message), 'error');
-            console.error('Error:', error);
-        });
+function showFeedback(message, alertClass) {
+    const feedbackElement = document.getElementById('feedbackMessage');
+    feedbackElement.className = `alert ${alertClass}`;
+    feedbackElement.textContent = message;
+    feedbackElement.style.display = 'block';
+    setTimeout(() => {
+        feedbackElement.style.display = 'none';
+    }, 3000);
 }
 
 // Function to add a new location
@@ -625,7 +627,6 @@ function quickAdd() {
     const barcodeInput = document.getElementById('quickAddBarcode');
     const barcode = barcodeInput.value;
     if (!barcode) {
-        showNotification('Please enter a barcode', 'error');
         return;
     }
 

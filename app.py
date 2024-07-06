@@ -46,6 +46,7 @@ def index():
     locations = sorted(get_locations(), key=lambda x: x['name'].lower())
     packaging_types = sorted(get_packaging_types(), key=lambda x: x['name'].lower())
     categories = sorted(get_categories(), key=lambda x: x['name'].lower())
+
     return render_template('index.html', items=items, consumed_items=consumed_items, locations=locations, packaging_types=packaging_types, categories=categories)
 
 @app.route('/use_item/<int:item_id>', methods=['POST'])
@@ -216,8 +217,11 @@ def delete_packaging_type_route():
 def lookup_barcode():
     barcode = request.json['barcode']
     # Use Open Food Facts API to look up the barcode
-    url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
-    response = requests.get(url)
+    url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
+    headers = {
+        'User-Agent': 'PantryCatalogApp/1.0 (https://example.com)'  # Replace with your app's user agent
+    }
+    response = requests.get(url, headers=headers)
     if response.status_code == 200:
         data = response.json()
         if data['status'] == 1:
@@ -228,7 +232,7 @@ def lookup_barcode():
                 "brand": product.get('brands', ''),
                 "package_size": product.get('quantity', ''),
                 "image_url": product.get('image_url', ''),
-                "categories": product.get('categories', '').split(',')
+                "categories": product.get('categories_tags', [])
             }), 200
         else:
             return jsonify({"success": False, "message": "Product not found"}), 404
