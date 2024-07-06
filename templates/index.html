@@ -342,21 +342,4 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            document.getElementById('quickAddBarcode').focus();
-        }, 500);
-    });
-
-    document.getElementById('quickAddButton').addEventListener('click', function() {
-        const barcode = document.getElementById('quickAddBarcode').value;
-        if (barcode) {
-            lookupBarcode(barcode);
-        } else {
-            showFeedback('Please enter a barcode.', 'alert-warning');
-        }
-    });
-</script>
-{% endblock %}
+{% block scripts %}{% endblock %}

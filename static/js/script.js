@@ -161,12 +161,25 @@ function lookupBarcode(barcode) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            showFeedback('Product found!', 'alert-success');
-            // You can update the UI or prefill forms with the product data if needed.
-        } else {
-            showFeedback(data.message, 'alert-danger');
-        }
+        data = response.data;
+            if (data.success) {
+                showFeedback('Product found!', 'alert-success');
+
+                document.getElementById('name').value = data.name;
+                document.getElementById('brand').value = data.brand;
+                document.getElementById('package_size').value = data.package_size;
+                document.getElementById('image_url').value = data.image_url;
+
+                // Set selected categories
+                const categoriesSelect = document.getElementById('categories');
+                for (let option of categoriesSelect.options) {
+                    option.selected = data.categories.includes(option.value);
+                }
+
+                showNotification('Product information retrieved successfully', 'success');
+            } else {
+                showFeedback(data.message, 'alert-danger');
+            }
     })
     .catch(error => {
         showFeedback('Error looking up barcode.', 'alert-danger');
@@ -624,9 +637,11 @@ function deleteShoppingList(listId) {
 }
 
 function quickAdd() {
+    //console.log('Quick add triggered');
     const barcodeInput = document.getElementById('quickAddBarcode');
     const barcode = barcodeInput.value;
     if (!barcode) {
+        showFeedback('Please enter a barcode.', 'alert-warning');
         return;
     }
 
@@ -1113,7 +1128,6 @@ function showAddItemToListModal(listId) {
 document.addEventListener('DOMContentLoaded', loadItems);
 
 // Event listener for quick add button
-
 document.addEventListener('DOMContentLoaded', function() {
     // Check if we're on the pantry page
     isPantryPage = !!document.getElementById('itemsTableBody');
@@ -1129,18 +1143,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up event listener for the shopping list modal
     setupShoppingListModal();
 
-    // Quick Add feature setup
-    const quickAddButton = document.getElementById('quickAddButton');
     const quickAddInput = document.getElementById('quickAddBarcode');
-
-    if (quickAddButton) {
-        quickAddButton.addEventListener('click', quickAdd);
-    }
 
     if (quickAddInput) {
         quickAddInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
+                //console.log('Enter key pressed');
                 quickAdd();
             }
         });
@@ -1175,3 +1184,12 @@ function setupCommonEventListeners() {
 
     // Add other common event listeners here
 }
+
+document.getElementById('quickAddButton').addEventListener('click', function() {
+    const barcode = document.getElementById('quickAddBarcode').value;
+    if (barcode) {
+        lookupBarcode(barcode);
+    } else {
+        showFeedback('Please enter a barcode.', 'alert-warning');
+    }
+});

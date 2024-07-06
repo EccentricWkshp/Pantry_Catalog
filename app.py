@@ -401,8 +401,11 @@ def quick_add():
             return jsonify({"success": True, "message": "Item quantity updated successfully", "item": existing_item}), 200
         
         # If the item doesn't exist, look up the barcode
-        url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
-        response = requests.get(url)
+        url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
+        headers = {
+            'User-Agent': 'PantryCatalogApp/1.0 (https://example.com)'  # Replace with your app's user agent
+        }
+        response = requests.get(url, headers=headers)
         
         if response.status_code == 200:
             data = response.json()
