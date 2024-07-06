@@ -402,9 +402,9 @@ def quick_add():
             return jsonify({"success": True, "message": "Item quantity updated successfully", "item": existing_item}), 200
         
         # If the item doesn't exist, look up the barcode
-        url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
+        url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}"
         headers = {
-            'User-Agent': 'PantryCatalogApp/1.0 (https://example.com)'  # Replace with your app's user agent
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
         }
         response = requests.get(url, headers=headers)
         
@@ -439,10 +439,16 @@ def quick_add():
                     "item": new_item
                 }), 200
             else:
+                print(f"Product not found {barcode}: {response.status_code}")
                 return jsonify({"success": False, "message": "Product not found"}), 404
-        else:
-            return jsonify({"success": False, "message": "Error looking up barcode"}), 500
+        elif response.status_code == 404:
+            data = response.json()
+            if data.get('status') == 0:
+                return jsonify({"success": False, "message": "Product not found"}), 404
+            else:
+                return jsonify({"success": False, "message": "Unexpected error"}), 500
     except Exception as e:
+        print(f"Exception: {e}")  # Add logging for the exception
         return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/download_database')

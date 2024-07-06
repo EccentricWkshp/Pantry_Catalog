@@ -681,6 +681,7 @@ function quickAdd() {
                 barcodeInput.focus();
             } else {
                 showNotification(response.data.message, 'error');
+                console.log('Success looking up barcode but we got an error message');
             }
         })
         .catch(error => {
@@ -689,10 +690,12 @@ function quickAdd() {
             console.error('Error:', error);
 
             if (errorMessage === 'Product not found') {
+                console.log('Barcode not found, open add item modal');
                 // Open the add item modal and populate the barcode field
                 const addItemModal = new bootstrap.Modal(document.getElementById('addItemModal'));
                 addItemModal.show();
                 document.getElementById('barcode').value = barcode;
+                document.getElementById('location').value = location;
                 
                 // Clear the quick add input
                 barcodeInput.value = '';
