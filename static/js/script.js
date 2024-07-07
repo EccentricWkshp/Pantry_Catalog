@@ -43,13 +43,23 @@ function addItem() {
     })
     .then(response => {
         showNotification('Item added successfully', 'success');
-        location.reload();
+        const newItem = response.data.item;
+        addItemToDOM(newItem); // Update the DOM with the new item
+        form.reset(); // Reset the form
+        
+        // Hide the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addItemModal'));
+        if (modal) {
+            modal.hide(); // Hide the edit modal
+        }
+
     })
     .catch(error => {
         showNotification('Error adding item: ' + (error.response?.data?.message || error.message), 'error');
         console.error('Error:', error);
     });
 }
+
 
 // Function to edit an item
 function editItem(itemId) {
@@ -117,7 +127,9 @@ function updateItem() {
             formData.append('image_url', imageUrl);
         }
     }
-
+    
+    console.log('Form data:', formData);
+    
     axios.post('/edit_item', formData, {
         headers: {
             'Content-Type': 'multipart/form-data'
@@ -125,7 +137,14 @@ function updateItem() {
     })
     .then(response => {
         showNotification('Item updated successfully', 'success');
-        location.reload();
+        const updatedItem = response.data.item || response.data; // Adjust this based on the actual response structure
+        console.log('New item:', updatedItem); // Debugging line
+        updateItemInDOM(updatedItem); // Update the DOM with the updated item
+        form.reset(); // Reset the form
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
+        modal.hide(); // Hide the edit modal
+        const imagePreview = document.getElementById('editImagePreview');
+        imagePreview.src = ''; // Clear the image preview
     })
     .catch(error => {
         showNotification('Error updating item: ' + (error.response?.data?.message || error.message), 'error');
@@ -139,7 +158,7 @@ function deleteItem(itemId) {
         axios.post('/delete_item', { id: itemId })
             .then(response => {
                 showNotification('Item deleted successfully', 'success');
-                location.reload();
+                removeItemFromDOM(itemId); // Remove the item from the DOM
             })
             .catch(error => {
                 showNotification('Error deleting item: ' + (error.response?.data?.message || error.message), 'error');
@@ -729,7 +748,9 @@ function updateItemList(item) {
                         `<img src="/static/images/no-image.png" alt="No Image" class="img-thumbnail product-image">`
                     }
                 </td>
+                <td style="display:none;">${item.id}</td>
                 <td>${item.name}</td>
+                <td style="display:none;">${item.barcode}</td>
                 <td class="item-quantity">${item.quantity}</td>
                 <td>${item.location || 'Default Location'}</td>
                 <td>
@@ -920,7 +941,9 @@ function addToPantryItems(item) {
                     `<img src="/static/images/no-image.png" alt="No Image" class="img-thumbnail product-image">`
                 }
             </td>
+            <td style="display:none;">${item.id}</td>
             <td>${item.name}</td>
+            <td style="display:none;">${item.barcode}</td>
             <td>${item.quantity}</td>
             <td>${item.location || 'Default Location'}</td>
             <td>
@@ -955,13 +978,15 @@ function createPantryItemRow(originalRow) {
     const newRow = document.createElement('tr');
     newRow.setAttribute('data-item-id', originalRow.getAttribute('data-item-id'));
     
+    //  0     1   2       3        4          5        6
+    //image, id, name, barcode, quantity, location, actions
     const imageCell = originalRow.cells[0].cloneNode(true);
     const nameCell = originalRow.cells[1].cloneNode(true);
     const quantityCell = document.createElement('td');
     quantityCell.className = 'item-quantity';
     quantityCell.textContent = '1';
     const locationCell = document.createElement('td');
-    locationCell.textContent = 'Default Location'; // You might want to set this to a more appropriate value
+    locationCell.textContent = 'Default Location';
     const actionsCell = document.createElement('td');
     
     actionsCell.innerHTML = `
@@ -1035,7 +1060,9 @@ function renderItems(items) {
                     `<img src="/static/images/no-image.png" alt="No Image" class="img-thumbnail product-image">`
                 }
             </td>
+            <td style="display:none;">${item.id}</td>
             <td>${item.name}</td>
+            <td style="display:none;">${item.barcode}</td>
             <td>${item.quantity}</td>
             <td>${item.location || 'Default Location'}</td>
             <td>
@@ -1052,11 +1079,13 @@ function renderItems(items) {
 function setupFilters() {
     if (!isPantryPage) return;
 
+    const barcodeFilter = document.getElementById('barcodeFilter');
     const nameFilter = document.getElementById('nameFilter');
     const quantityFilter = document.getElementById('quantityFilter');
     const locationFilter = document.getElementById('locationFilter');
     const categoryFilter = document.getElementById('categoryFilter');
 
+    if (barcodeFilter) barcodeFilter.addEventListener('input', applyFilters);
     if (nameFilter) nameFilter.addEventListener('input', applyFilters);
     if (quantityFilter) quantityFilter.addEventListener('change', applyFilters);
     if (locationFilter) locationFilter.addEventListener('change', applyFilters);
@@ -1066,22 +1095,24 @@ function setupFilters() {
 function applyFilters() {
     if (!isPantryPage) return;
 
-    const nameFilter = document.getElementById('nameFilter');
-    const quantityFilter = document.getElementById('quantityFilter');
-    const locationFilter = document.getElementById('locationFilter');
-    const categoryFilter = document.getElementById('categoryFilter');
+    const barcodeFilter = document.getElementById('barcodeFilter').value;
+    const nameFilter = document.getElementById('nameFilter').value.toLowerCase();
+    const quantityFilter = document.getElementById('quantityFilter').value;
+    const locationFilter = document.getElementById('locationFilter').value;
+    const categoryFilter = document.getElementById('categoryFilter').value;
 
     const filteredItems = allItems.filter(item => {
-        const nameMatch = !nameFilter || item.name.toLowerCase().includes(nameFilter.value.toLowerCase());
-        const locationMatch = !locationFilter || locationFilter.value === '' || 
-                              (locationFilter.value === 'Default Location' && !item.location) || 
-                              item.location === locationFilter.value;
-        const categoryMatch = !categoryFilter || categoryFilter.value === '' || 
-                              (item.categories && item.categories.includes(categoryFilter.value));
+        const barcodeMatch = !barcodeFilter || (item.barcode && item.barcode.includes(barcodeFilter));
+        const nameMatch = !nameFilter || item.name.toLowerCase().includes(nameFilter);
+        const locationMatch = !locationFilter || locationFilter === '' || 
+                              (locationFilter === 'Default Location' && !item.location) || 
+                              item.location === locationFilter;
+        const categoryMatch = !categoryFilter || categoryFilter === '' || 
+                              (item.categories && item.categories.includes(categoryFilter));
         
         let quantityMatch = true;
-        if (quantityFilter && quantityFilter.value) {
-            const [min, max] = quantityFilter.value.split('-').map(Number);
+        if (quantityFilter) {
+            const [min, max] = quantityFilter.split('-').map(Number);
             if (max) {
                 quantityMatch = item.quantity >= min && item.quantity <= max;
             } else {
@@ -1089,7 +1120,7 @@ function applyFilters() {
             }
         }
 
-        return nameMatch && quantityMatch && locationMatch && categoryMatch;
+        return barcodeMatch && nameMatch && quantityMatch && locationMatch && categoryMatch;
     });
 
     // Sort items alphabetically by name
@@ -1134,6 +1165,82 @@ function showAddItemToListModal(listId) {
     }
     
     modal.show();
+}
+
+// Function to add the new item to the DOM
+function addItemToDOM(item) {
+    const tbody = document.getElementById('itemsTableBody');
+    const newRow = document.createElement('tr');
+    newRow.setAttribute('data-item-id', item.id);
+
+    newRow.innerHTML = `
+        <td>
+            ${item.image_url ? 
+                `<img src="${item.image_url}" alt="${item.name}" class="img-thumbnail product-image">` :
+                `<img src="/static/images/no-image.png" alt="No Image" class="img-thumbnail product-image">`
+            }
+        </td>
+        <td style="display:none;">${item.id}</td>
+        <td>${item.name}</td>
+        <td style="display:none;">${item.barcode}</td>
+        <td class="item-quantity">${item.quantity}</td>
+        <td>${item.location || 'Default Location'}</td>
+        <td>
+            <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+            <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
+            <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+        </td>
+    `;
+    tbody.prepend(newRow);
+    addImageClickListeners(); // Add click listeners to the new images
+}
+
+// Function to update the existing item in the DOM
+function updateItemInDOM(item) {
+    if (!item || !item.id) {
+        console.error('Invalid item object:', item); // Debugging line
+        return;
+    }
+    console.log('DOM Update Item:', item);
+
+    const row = document.querySelector(`#itemsTableBody tr[data-item-id="${item.id}"]`);
+    console.log('Found row:', row); // Debugging line
+
+    if (row) {
+        row.innerHTML = `
+            <td>
+                ${item.image_url ? 
+                    `<img src="${item.image_url}" alt="${item.name}" class="img-thumbnail product-image">` :
+                    `<img src="/static/images/no-image.png" alt="No Image" class="img-thumbnail product-image">`
+                }
+            </td>
+            <td style="display:none;">${item.id}</td>
+            <td>${item.name}</td>
+            <td style="display:none;">${item.barcode}</td>
+            <td class="item-quantity">${item.quantity}</td>
+            <td>${item.location || 'Default Location'}</td>
+            <td>
+                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
+                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+            </td>
+        `;
+        addImageClickListeners(); // Add click listeners to the new images
+    } else {
+        console.error('No row found with data-item-id:', item.id); // Debugging line
+    }
+}
+
+// Function to remove the item from the DOM
+function removeItemFromDOM(itemId) {
+    const row = document.querySelector(`#itemsTableBody tr[data-item-id="${itemId}"]`);
+    if (row) {
+        row.remove();
+    } else {
+        console.error('No row found with data-item-id:', itemId);
+    }
 }
 
 // Call this function when the page loads

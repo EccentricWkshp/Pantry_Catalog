@@ -10,7 +10,7 @@
         <div class="col-md-6">
             
             <div class="input-group mb-3">
-                <label for="qaLocation" class="form-label">Location</label>
+                <label for="qaLocation" class="form-label">QA Location </label>
                 <select class="form-select form-select-sm" id="qaLocation" name="qaLocation" required>
                     {% for location in locations %}
                     <option value="{{ location.name }}">{{ location.name }}</option>
@@ -40,6 +40,9 @@
 <div id="feedbackMessage" class="alert" role="alert" style="display: none;"></div>
 
 <div class="row mb-3">
+    <div class="col-md-3 mb-2">
+        <input type="text" id="barcodeFilter" class="form-control" placeholder="Filter by barcode">
+    </div>
     <div class="col-md-3 mb-2">
         <input type="text" id="nameFilter" class="form-control" placeholder="Filter by name">
     </div>
@@ -75,7 +78,9 @@
     <thead>
         <tr>
             <th>Image</th>
+            <th style="display:none;">ID</th>
             <th>Name</th>
+            <th style="display:none;">Barcode</th>
             <th>Quantity</th>
             <th>Location</th>
             <th>Actions</th>
@@ -92,7 +97,9 @@
                 <img src="{{ url_for('static', filename='images/no-image.png') }}" alt="No Image" class="img-thumbnail product-image">
                 {% endif %}
             </td>
+            <td style="display:none;">{{ item.id }}</td>
             <td>{{ item.name }}</td>
+            <td style="display:none;">{{ item.barcode }}</td>
             <td class="item-quantity">{{ item.quantity }}</td>
             <td>{{ item.location }}</td>
             <td>

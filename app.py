@@ -93,8 +93,9 @@ def add_item_route():
                 file.save(file_path)
                 image_url = f'/static/uploads/{filename}'
 
-        add_item(name, quantity, location, barcode, brand, package_size, packaging, categories, image_url)
-        return jsonify({"success": True, "message": "Item added successfully"}), 200
+        new_item = add_item(name, quantity, location, barcode, brand, package_size, packaging, categories, image_url)
+
+        return jsonify({"success": True, "message": "Item added successfully", "item": get_item(new_item)}), 200
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
@@ -140,7 +141,7 @@ def edit_item_route():
             image_url = existing_item['image_url'] if existing_item else None
 
         edit_item(id, name, quantity, location, barcode, brand, package_size, packaging, categories, image_url)
-        return jsonify({"success": True, "message": "Item updated successfully"}), 200
+        return jsonify({"success": True, "message": "Item updated successfully", "item": get_item(id)}), 200
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
@@ -503,4 +504,4 @@ if __name__ == '__main__':
     # Clean up any leftover temporary files from previous runs
     cleanup_temp_files()
 
-    app.run(debug=True, host="0.0.0.0", port=5000)  # Modify the port if needed
+    app.run(debug=True, host="127.0.0.1", port=5000)  # Modify the port if needed
