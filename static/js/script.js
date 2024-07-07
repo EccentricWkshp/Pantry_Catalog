@@ -1304,6 +1304,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupCommonEventListeners() {
     // Add event listeners for elements that exist on all pages
+
     // For example, the create shopping list form
     const createShoppingListForm = document.getElementById('createShoppingListForm');
     if (createShoppingListForm) {
@@ -1313,14 +1314,15 @@ function setupCommonEventListeners() {
         });
     }
 
-    // Add other common event listeners here
-}
-
-document.getElementById('quickAddButton').addEventListener('click', function() {
-    const barcode = document.getElementById('quickAddBarcode').value;
-    if (barcode) {
-        lookupBarcode(barcode);
-    } else {
-        showFeedback('Please enter a barcode.', 'alert-warning');
+    const isQuickAddButton = document.getElementById('quickAddButton');
+    if (isQuickAddButton) {
+        document.getElementById('quickAddButton').addEventListener('click', function() {
+            const barcode = document.getElementById('quickAddBarcode').value;
+            if (barcode) {
+                lookupBarcode(barcode);
+            } else {
+                showFeedback('Please enter a barcode.', 'alert-warning');
+            }
+        });
     }
-});
+}
