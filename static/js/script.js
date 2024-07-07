@@ -853,7 +853,7 @@ function addToConsumedItems(item) {
 function updateItemRow(item) {
     const row = document.querySelector(`#itemsTableBody tr[data-item-id="${item.id}"]`);
     if (row) {
-        row.querySelector('td:nth-child(3)').textContent = item.quantity;
+        row.querySelector('td:nth-child(5)').textContent = item.quantity;
     }
 }
 
@@ -944,7 +944,7 @@ function addToPantryItems(item) {
             <td style="display:none;">${item.id}</td>
             <td>${item.name}</td>
             <td style="display:none;">${item.barcode}</td>
-            <td>${item.quantity}</td>
+            <td class="item-quantity">${item.quantity}</td>
             <td>${item.location || 'Default Location'}</td>
             <td>
                 <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
@@ -1063,7 +1063,7 @@ function renderItems(items) {
             <td style="display:none;">${item.id}</td>
             <td>${item.name}</td>
             <td style="display:none;">${item.barcode}</td>
-            <td>${item.quantity}</td>
+            <td class="item-quantity">${item.quantity}</td>
             <td>${item.location || 'Default Location'}</td>
             <td>
                 <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
