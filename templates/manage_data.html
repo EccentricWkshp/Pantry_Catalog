@@ -14,50 +14,50 @@
 <div class="row">
     <div class="col-md-4">
         <h2>Locations</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">Add Location</button>
         <ul class="list-group mb-3">
             {% for location in locations %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 {{ location.name }}
                 <div>
-                    <button class="btn btn-sm btn-info" onclick="editLocation({{ location.id }}, '{{ location.name }}')">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteLocation({{ location.id }})">Delete</button>
+                    <button class="btn btn-sm btn-info" onclick="editLocation({{ location.id }}, '{{ location.name }}')" title="Edit Location"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteLocation({{ location.id }})" title="Delete Location"><i class="fas fa-trash"></i></button>
                 </div>
             </li>
             {% endfor %}
         </ul>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">Add Location</button>
     </div>
 
     <div class="col-md-4">
         <h2>Packaging Types</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPackagingTypeModal">Add Packaging Type</button>
         <ul class="list-group mb-3">
             {% for packaging_type in packaging_types %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 {{ packaging_type.name }}
                 <div>
-                    <button class="btn btn-sm btn-info" onclick="editPackagingType({{ packaging_type.id }}, '{{ packaging_type.name }}')">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deletePackagingType({{ packaging_type.id }})">Delete</button>
+                    <button class="btn btn-sm btn-info" onclick="editPackagingType({{ packaging_type.id }}, '{{ packaging_type.name }}')" title="Edit Packaging Type"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePackagingType({{ packaging_type.id }})" title="Delete Packaging Type"><i class="fas fa-trash"></i></button>
                 </div>
             </li>
             {% endfor %}
         </ul>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPackagingTypeModal">Add Packaging Type</button>
     </div>
 
     <div class="col-md-4">
         <h2>Categories</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">Add Category</button>
         <ul class="list-group mb-3">
             {% for category in categories %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 {{ category.name }}
                 <div>
-                    <button class="btn btn-sm btn-info" onclick="editCategory({{ category.id }}, '{{ category.name }}')">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteCategory({{ category.id }})">Delete</button>
+                    <button class="btn btn-sm btn-info" onclick="editCategory({{ category.id }}, '{{ category.name }}')" title="Edit Category"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCategory({{ category.id }})" title="Delete Category"><i class="fas fa-trash"></i></button>
                 </div>
             </li>
             {% endfor %}
         </ul>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">Add Category</button>
     </div>
 </div>
 

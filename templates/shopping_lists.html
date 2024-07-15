@@ -22,19 +22,19 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">{{ list.name }}</h5>
                 <div>
-                    <button class="btn btn-warning btn-sm" onclick="renameShoppingList({{ list.id }}, '{{ list.name }}')">
+                    <button class="btn btn-warning btn-sm" onclick="renameShoppingList({{ list.id }}, '{{ list.name }}')" title="Rename Shopping List">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteShoppingList({{ list.id }})">
+                    <button class="btn btn-danger btn-sm" onclick="deleteShoppingList({{ list.id }})" title="Delete Shopping List">
                         <i class="fas fa-trash-alt"></i>
                     </button>
-                    <a href="{{ url_for('print_shopping_list', list_id=list.id) }}" class="btn btn-secondary btn-sm" target="_blank">
+                    <a href="{{ url_for('print_shopping_list', list_id=list.id) }}" class="btn btn-secondary btn-sm" target="_blank" title="Print Shopping List">
                         <i class="fas fa-print"></i>
                     </a>
                 </div>
             </div>
             <div class="card-body">
-                <button class="btn btn-primary btn-sm mb-3" onclick="showAddItemToListModal({{ list.id }})">
+                <button class="btn btn-primary btn-sm mb-3" onclick="showAddItemToListModal({{ list.id }})" title="Add Item to List">
                     <i class="fas fa-plus"></i> Add Item
                 </button>
                 <table class="table table-sm">

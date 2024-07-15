@@ -103,10 +103,10 @@
             <td class="item-quantity">{{ item.quantity }}</td>
             <td>{{ item.location }}</td>
             <td>
-                <button class="btn btn-sm btn-info" onclick="editItem({{ item.id }})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem({{ item.id }})">Delete</button>
-                <button class="btn btn-sm btn-success" onclick="addToShoppingList({{ item.id }}, '{{ item.name }}')">+ List</button>
-                <button class="btn btn-sm btn-warning" onclick="useItem({{ item.id }})">Use</button>
+                <button class="btn btn-sm btn-info" onclick="editItem({{ item.id }})" title="Edit Item"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem({{ item.id }})" title="Delete Item"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList({{ item.id }}, '{{ item.name }}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+                <button class="btn btn-sm btn-warning" onclick="useItem({{ item.id }})" title="Use Item"><i class="fas fa-cookie-bite"></i></button>
             </td>
         </tr>
         {% endif %}
@@ -135,9 +135,10 @@
             </td>
             <td>{{ item.name }}</td>
             <td>
-                <button class="btn btn-sm btn-success" onclick="moveToPantry({{ item.id }})">Move to Pantry</button>
-                <button class="btn btn-sm btn-info" onclick="editItem({{ item.id }})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem({{ item.id }})">Remove</button>
+                <button class="btn btn-sm btn-success" onclick="moveToPantry({{ item.id }})" title="Move to Pantry">Move to Pantry</button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList({{ item.id }}, '{{ item.name }}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+                <button class="btn btn-sm btn-info" onclick="editItem({{ item.id }})"><i class="fas fa-edit" title="Edit Item"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem({{ item.id }})"><i class="fas fa-trash" title="Delete Item"></i></button>
             </td>
         </tr>
         {% endfor %}
