@@ -408,33 +408,6 @@ function createShoppingList() {
 }
 
 // Function to view a shopping list
-function viewShoppingList(listId) {
-    axios.get(`/get_shopping_list/${listId}`)
-        .then(response => {
-            const list = response.data;
-            document.getElementById('shoppingListTitle').textContent = list.name;
-            const tbody = document.getElementById('shoppingListItems');
-            tbody.innerHTML = '';
-            list.items.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.name}</td>
-                    <td>${item.quantity}</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger" onclick="removeFromShoppingList(${list.id}, ${item.id})">Remove</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            const viewModal = new bootstrap.Modal(document.getElementById('viewShoppingListModal'));
-            viewModal.show();
-        })
-        .catch(error => {
-            showNotification('Error fetching shopping list: ' + (error.response?.data?.message || error.message), 'error');
-            console.error('Error:', error);
-        });
-}
-
 let currentShoppingListId = null;
 
 function viewShoppingList(listId) {
@@ -451,7 +424,13 @@ function viewShoppingList(listId) {
                     <td>${item.name}</td>
                     <td>${item.quantity}</td>
                     <td>
-                        <button class="btn btn-sm btn-danger" onclick="removeFromShoppingList(${list.id}, ${item.id})">Remove</button>
+                        <button class="btn btn-sm btn-info" onclick="editShoppingListItem(${list.id}, ${item.id}, '${item.name}', ${item.quantity})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="removeFromShoppingList(${list.id}, ${item.id})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <!-- <button class="btn btn-sm btn-success" onclick="moveToPantry(${item.id})" title="Add to Pantry">Add to Pantry</button> -->
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -483,6 +462,7 @@ function loadShoppingListItems(listId) {
                         <button class="btn btn-sm btn-danger" onclick="removeFromShoppingList(${list.id}, ${item.id})">
                             <i class="fas fa-trash-alt"></i>
                         </button>
+                        <!-- <button class="btn btn-sm btn-success" onclick="moveToPantry(${item.id})" title="Add to Pantry">Add to Pantry</button> -->
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -754,10 +734,10 @@ function updateItemList(item) {
                 <td class="item-quantity">${item.quantity}</td>
                 <td>${item.location || 'Default Location'}</td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
-                    <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
-                    <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+                    <button class="btn btn-sm btn-info" onclick="editItem(${item.id})" title="Edit Item"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Delete Item"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+                    <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})" title="Use Item"><i class="fas fa-cookie-bite"></i></button>
                 </td>
             `;
             tbody.prepend(existingRow);
@@ -782,10 +762,10 @@ function createPantryItemRow(consumedRow, item) {
     const actionsCell = document.createElement('td');
     
     actionsCell.innerHTML = `
-        <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
-        <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
-        <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+        <button class="btn btn-sm btn-info" onclick="editItem(${item.id})" title="Edit Item"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Delete Item"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+        <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})" title="Use Item"><i class="fas fa-cookie-bite"></i></button>
     `;
 
     newRow.appendChild(imageCell);
@@ -841,9 +821,10 @@ function addToConsumedItems(item) {
             </td>
             <td>${item.name}</td>
             <td>
-                <button class="btn btn-sm btn-success" onclick="moveToPantry(${item.id})">Move to Pantry</button>
-                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Remove</button>
+                <button class="btn btn-sm btn-success" onclick="moveToPantry(${item.id})" title="Move to Pantry">Move to Pantry</button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList({{ item.id }}, '{{ item.name }}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})" title="Edit Item"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Delete Item"><i class="fas fa-trash"></i></button>
             </td>
         `;
         consumedItemsBody.appendChild(tr);
@@ -890,9 +871,10 @@ function createConsumedItemRow(originalRow) {
     const actionsCell = document.createElement('td');
     
     actionsCell.innerHTML = `
-        <button class="btn btn-sm btn-success" onclick="moveToPantry(${newRow.getAttribute('data-item-id')})">Move to Pantry</button>
-        <button class="btn btn-sm btn-info" onclick="editItem(${newRow.getAttribute('data-item-id')})">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteItem(${newRow.getAttribute('data-item-id')})">Remove</button>
+        <button class="btn btn-sm btn-success" onclick="moveToPantry(${newRow.getAttribute('data-item-id')})" title="Move to Pantry">Move to Pantry</button>
+        <button class="btn btn-sm btn-success" onclick="addToShoppingList({{ item.id }}, '{{ item.name }}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+        <button class="btn btn-sm btn-info" onclick="editItem(${newRow.getAttribute('data-item-id')})" title="Edit Item"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem(${newRow.getAttribute('data-item-id')})" title="Delete Item"><i class="fas fa-trash"></i></button>
     `;
 
     newRow.appendChild(imageCell);
@@ -947,10 +929,10 @@ function addToPantryItems(item) {
             <td class="item-quantity">${item.quantity}</td>
             <td>${item.location || 'Default Location'}</td>
             <td>
-                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
-                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
-                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})" title="Edit Item"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Delete Item"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})" title="Use Item"><i class="fas fa-cookie-bite"></i></button>
             </td>
         `;
         pantryItemsBody.appendChild(tr);
@@ -990,10 +972,10 @@ function createPantryItemRow(originalRow) {
     const actionsCell = document.createElement('td');
     
     actionsCell.innerHTML = `
-        <button class="btn btn-sm btn-info" onclick="editItem(${newRow.getAttribute('data-item-id')})">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteItem(${newRow.getAttribute('data-item-id')})">Delete</button>
-        <button class="btn btn-sm btn-success" onclick="addToShoppingList(${newRow.getAttribute('data-item-id')}, '${nameCell.textContent}')">+ List</button>
-        <button class="btn btn-sm btn-warning" onclick="useItem(${newRow.getAttribute('data-item-id')})">Use</button>
+        <button class="btn btn-sm btn-info" onclick="editItem(${newRow.getAttribute('data-item-id')})" title="Edit Item"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem(${newRow.getAttribute('data-item-id')})" title="Delete Item"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm btn-success" onclick="addToShoppingList(${newRow.getAttribute('data-item-id')}, '${nameCell.textContent}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+        <button class="btn btn-sm btn-warning" onclick="useItem(${newRow.getAttribute('data-item-id')})" title="Use Item"><i class="fas fa-cookie-bite"></i></button>
     `;
 
     newRow.appendChild(imageCell);
@@ -1066,10 +1048,10 @@ function renderItems(items) {
             <td class="item-quantity">${item.quantity}</td>
             <td>${item.location || 'Default Location'}</td>
             <td>
-                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
-                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
-                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})" title="Edit Item"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Delete Item"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})" title="Use Item"><i class="fas fa-cookie-bite"></i></button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -1186,10 +1168,10 @@ function addItemToDOM(item) {
         <td class="item-quantity">${item.quantity}</td>
         <td>${item.location || 'Default Location'}</td>
         <td>
-            <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
-            <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
-            <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+            <button class="btn btn-sm btn-info" onclick="editItem(${item.id})" title="Edit Item"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Delete Item"><i class="fas fa-trash"></i></button>
+            <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+            <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})" title="Use Item"><i class="fas fa-cookie-bite"></i></button>
         </td>
     `;
     tbody.prepend(newRow);
@@ -1221,10 +1203,10 @@ function updateItemInDOM(item) {
             <td class="item-quantity">${item.quantity}</td>
             <td>${item.location || 'Default Location'}</td>
             <td>
-                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Delete</button>
-                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')">+ List</button>
-                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})">Use</button>
+                <button class="btn btn-sm btn-info" onclick="editItem(${item.id})" title="Edit Item"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Delete Item"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-sm btn-success" onclick="addToShoppingList(${item.id}, '${item.name}')" title="Add to Shopping List"><i class="fas fa-cart-plus"></i></button>
+                <button class="btn btn-sm btn-warning" onclick="useItem(${item.id})" title="Use Item"><i class="fas fa-cookie-bite"></i></button>
             </td>
         `;
         addImageClickListeners(); // Add click listeners to the new images
